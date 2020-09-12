@@ -52,10 +52,10 @@ def register(instance, *args):
     login = {}
     login[instance] = user
     file_name = input('Set filename: (default: cred.json)')
-    if not file_name.endswith('.json'):
-        file_name += '.json'
-    elif file_name == '':
+    if file_name == '':
         file_name = 'cred.json'
+    elif not file_name.endswith('.json'):
+        file_name += '.json'
     with open(base + file_name, 'w') as fw:
         json.dump(login, fw)
     return 0
@@ -63,7 +63,7 @@ def register(instance, *args):
 def retrieve(username, instance, filename):
     import os
     instance = chk_(instance)
-    if not filename.enswith('.json'):
+    if not filename.endswith('.json'):
         filename += '.json'
     with open(base + filename) as f:
         cred = json.load(f)
