@@ -1,9 +1,19 @@
 import requests
+import logging
 import json
 import sys
 import os
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)),'')
+
+base = os.path.join(os.path.dirname(os.path.abspath(__file__)),'')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('[%(asctime)s][%(levelname)s|%(filename)s:%(lineno)s] >> %(message)s')
+streamHandler = logging.StreamHandler()
+streamHandler.setFormatter(formatter)
+logger.addHandler(streamHandler)
 
 def chk_(url):
     if url[:5] != 'https':
@@ -29,24 +39,31 @@ def register(instance, *args):
     client_name = input('Please input your client name: (default: credential_generator) ')
     if client_name == '':
         client_name = 'credential_generator'
+    logger.debug('client_name: ' + str(client_name))
     if args:
         p = per(args[0])
     else:
         p = per(1)
+    logger.debug('per: '+str(p))
     data = {'client_name': client_name,'redirect_uris': 'urn:ietf:wg:oauth:2.0:oob', 'scopes': p}
     r = requests.post(instance+'/api/v1/apps', data=data)
     rdata = r.json()
     client_id = rdata['client_id']
     client_secret = rdata['client_secret']
+    logger.debug('Client ID: '+str(client_id))
+    logger.debug('Client Secret: '+str(client_secret))
     import webbrowser
     p = p.replace(' ','%20')
     webbrowser.open(instance+'/oauth/authorize?client_id='+client_id +'&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope='+p)
     code = input('input you code from browser: ')
-    print('your access_code is: '+code)
+    logger.info('your access_code is: '+code)
     auth_data = {'client_id': client_id, 'client_secret': client_secret, 'code': code,'grant_type': 'authorization_code', 'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob'}
     rauth = requests.post(instance + '/oauth/token', data=auth_data)
+    logger.debug(rauth)
     access_token = rauth.json()['access_token']
+    logger.debug('access_token: '+str(access_token))
     username = json.loads(requests.get(instance+'/api/v1/accounts/verify_credentials',headers={'Authorization': 'Bearer '+access_token}).content)['acct']
+    logger.debug(username)
     user = {}
     user[username] = access_token
     login = {}
@@ -56,6 +73,7 @@ def register(instance, *args):
         file_name = 'cred.json'
     elif not file_name.endswith('.json'):
         file_name += '.json'
+    logger.debug('filename: '+str(file_name))
     with open(base + file_name, 'w') as fw:
         json.dump(login, fw)
     return 0
